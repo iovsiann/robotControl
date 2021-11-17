@@ -273,106 +273,6 @@ void robotArmControl::masterLoop()
         }
       }
       
-      /*else if(continous == 1)
-      {
-        DEBUG_PRINTLN("ALL STOPPED");
-        continous = 0;
-        stepper.stop(HARD);
-        this->bus.stopSlave(ELBOW);
-        this->bus.stopSlave(SHOULDER);
-      }*/
-      /*
-      else
-      {
-        errorBase = this->angleTargetBase - (ptr->direction * this->angleBase);
-        errorElbow = this->angleTargetElbow - this->angleElbow;
-        errorShoulder = this->angleTargetShoulder - this->angleShoulder;
-        
-        correctErrors = 0;
-
-        if(errorBase < -1.0 || errorBase > 1.0){correctErrors |= 1;}
-        if(errorElbow < -1.0 || errorElbow > 1.0){correctErrors |= 2;}
-        if(errorShoulder < -1.0 || errorShoulder > 1.0){correctErrors |= 4;}
-        
-        if(correctErrors)
-        {
-
-          errorDistance = sqrt((errorBase * errorBase) + (errorElbow * errorElbow) + (errorShoulder * errorShoulder));
-          
-          if(correctErrors & 0x01)
-          {
-            correctionTargetAngleBase = this->angleBase + ((errorBase/errorDistance) * FEEDRATETOANGULARFEEDRATE(this->feedrate) * 0.2);
-            if(errorBase < 0.0)
-            {
-              if(correctionTargetAngleBase < this->angleTargetBase)
-              {
-                correctionTargetAngleBase = this->angleTargetBase;
-              }
-            }
-            else
-            {
-              if(correctionTargetAngleBase > this->angleTargetBase)
-              {
-                correctionTargetAngleBase = this->angleTargetBase;
-              }
-            }
-          }
-          if(correctErrors & 0x02)
-          {
-            correctionTargetAngleElbow = this->angleElbow + ((errorElbow/errorDistance) * FEEDRATETOANGULARFEEDRATE(this->feedrate) * 0.2);
-            if(errorElbow < 0.0)
-            {
-              if(correctionTargetAngleElbow < this->angleTargetElbow)
-              {
-                correctionTargetAngleElbow = this->angleTargetElbow;
-              }
-            }
-            else
-            {
-              if(correctionTargetAngleElbow > this->angleTargetElbow)
-              {
-                correctionTargetAngleElbow = this->angleTargetElbow;
-              }
-            }
-          }
-          if(correctErrors & 0x04)
-          {
-            correctionTargetAngleShoulder = this->angleShoulder + ((errorShoulder/errorDistance) * FEEDRATETOANGULARFEEDRATE(this->feedrate) * 0.2);
-            if(errorShoulder < 0.0)
-            {
-              if(correctionTargetAngleShoulder < this->angleTargetShoulder)
-              {
-                correctionTargetAngleShoulder = this->angleTargetShoulder;
-              }
-            }
-            else
-            {
-              if(correctionTargetAngleShoulder > this->angleTargetShoulder)
-              {
-                correctionTargetAngleShoulder = this->angleTargetShoulder;
-              }
-            }
-          }
-
-          jointsAllowedToMove = calcVelocityProfile(correctionTargetAngleBase,correctionTargetAngleElbow,correctionTargetAngleShoulder,true);
-          DEBUG_PRINT("this->targetBaseSpeed: ");
-          DEBUG_PRINTLNFLOAT(this->targetBaseSpeed,3);
-          DEBUG_PRINT("this->targetElbowSpeed: ");
-          DEBUG_PRINTLNFLOAT(this->targetElbowSpeed,3);
-          DEBUG_PRINT("this->targetShoulderSpeed: ");
-          DEBUG_PRINTLNFLOAT(this->targetShoulderSpeed,3);
-          (jointsAllowedToMove & 0x01) ? this->runContinously(BASE, this->targetBaseSpeed) : stepper.stop(HARD);
-          (jointsAllowedToMove & 0x02) ? this->runContinously(ELBOW, -this->targetElbowSpeed) : this->bus.stopSlave(ELBOW);
-          (jointsAllowedToMove & 0x04) ? this->runContinously(SHOULDER, -this->targetShoulderSpeed) : this->bus.stopSlave(SHOULDER);
-          
-        }
-        else
-        {
-          stepper.stop(HARD);
-          this->bus.stopSlave(ELBOW);
-          this->bus.stopSlave(SHOULDER);
-        }
-      }*/
       ms = millis();
       if(this->valveOn)
       {
@@ -695,11 +595,12 @@ void robotArmControl::execute(char *command) {
 
     if ((px || py || pz) != true)
       comm.send("INVALID POS");
-    else
+    else {
       DEBUG_PRINT("STARTING MOVE");
       this->targetReached = false;
       this->movementInProgress = 0;
       setXYZ();
+    }
   }
 
   else if (comm.check("M10")) {
@@ -772,12 +673,10 @@ void robotArmControl::execute(char *command) {
 
   else if (comm.check("M4")) {
 
-    float servoVal;
-
-    if (!comm.value("S", &servoVal)) {
+    if (!comm.value("S", &this->targetServo)) {
       comm.send("INVALID SERVO");
-    } else {
-      this->setServo(servoVal);
+    } else {      
+      this->setServo(this->targetServo);
     }
   }
 
