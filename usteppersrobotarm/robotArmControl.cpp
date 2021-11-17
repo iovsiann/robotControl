@@ -178,11 +178,6 @@ void robotArmControl::masterLoop()
   uint32_t ms = millis();
   bool continous = 1;
   uint8_t jointsAllowedToMove;
-  float errorBase = 0.0, errorElbow = 0.0, errorShoulder = 0.0, errorDistance;
-  uint8_t correctErrors = 0;
-  float correctionTargetAngleBase,correctionTargetAngleShoulder,correctionTargetAngleElbow;
-  float targetXCorrection,targetYCorrection,targetZCorrection;
-  float speedXCorrection,speedYCorrection,speedZCorrection;
   this->movementInProgress = 0;
   while (1) {
     // Listen for commands from GUI or UART depending on what is defined in
@@ -510,10 +505,18 @@ void robotArmControl::calcVelocityProfileMovement(void) {
   
 }
 
+bool robotArmControl::setServoSpeed(float speed) {
+  if (speed <= 0.01 || speed > 100.0)
+    return false;
+  this->servoSpeed = speed;
+  return true;
+}
+
 void robotArmControl::setServo() {
   uint16_t servoSetting;
   static int32_t lastRun = millis();
-  if(millis() - lastRun >= 15)
+  int32_t timeElapsed = millis() - lastRun;
+  if(timeElapsed >= this->servoUpdatePeriod)
   {
     lastRun = millis();
   }
@@ -524,7 +527,7 @@ void robotArmControl::setServo() {
   
   if(this->filteredServo < this->currentServo)
   {
-    this->filteredServo += 1.0;
+    this->filteredServo += this->servoSpeed * timeElapsed;
     if(this->filteredServo > this->currentServo)
     {
       this->filteredServo = this->currentServo;
@@ -532,7 +535,7 @@ void robotArmControl::setServo() {
   }
   else if(this->filteredServo > this->currentServo)
   {
-    this->filteredServo -= 1.0;
+    this->filteredServo -= this->servoSpeed * timeElapsed;
     if(this->filteredServo < this->currentServo)
     {
       this->filteredServo = this->currentServo;
@@ -584,6 +587,7 @@ void robotArmControl::execute(char *command) {
   // Check for each valid command
 
   if (comm.check("G1")) {
+  	float servoSpeed;
 
     // Extract position, working on the string provided by .check()
     bool px = comm.value("X", &this->tx);
@@ -592,11 +596,15 @@ void robotArmControl::execute(char *command) {
     bool pv = comm.value("F", &this->feedrate);
     bool ps = comm.value("S", &this->targetServo);
     bool pp = comm.value("P", &this->targetPumpState);
+    bool pa = comm.value("A", &servoSpeed);
 
     if ((px || py || pz) != true)
       comm.send("INVALID POS");
     else {
       DEBUG_PRINT("STARTING MOVE");
+      if (pa) {
+        this->setServoSpeed(servoSpeed); // TODO check, report error
+      }
       this->targetReached = false;
       this->movementInProgress = 0;
       setXYZ();
@@ -677,6 +685,10 @@ void robotArmControl::execute(char *command) {
       comm.send("INVALID SERVO");
     } else {      
       this->setServo(this->targetServo);
+
+      float servoSpeed;
+      if (comm.value("A", &servoSpeed))
+        this->setServoSpeed(servoSpeed);
     }
   }
 

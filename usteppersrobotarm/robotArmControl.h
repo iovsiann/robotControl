@@ -86,6 +86,7 @@ private:
   float setServo(float servoVal);
 
   void setServo();
+  bool setServoSpeed(float speed);
 
   bool isRecording = false;
   bool targetReached = true;
@@ -120,6 +121,8 @@ private:
   float sx = 0.0;
   float sy = 0.0;
   float sz = 0.0;
+  float servoSpeed = 0.1; // degrees per msec
+  int servoUpdatePeriod = 5;
 
     // Target angular speed
   float targetBaseSpeed = 0.0;
@@ -127,9 +130,9 @@ private:
   float targetShoulderSpeed = 0.0;
 
   bool targetPumpState = 0;
-  float targetServo = 0.0;
-  float currentServo = 0.0;
-  float filteredServo = 0.0;
+  float targetServo = 0.0;    // angle in degrees
+  float currentServo = 0.0;   // angle in degrees
+  float filteredServo = 0.0;  // angle in degrees
   bool currentPumpState = 0;
   // Feedrate in mm/s
   float feedrate = 10.0;
