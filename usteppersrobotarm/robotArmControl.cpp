@@ -1,4 +1,4 @@
-#include "robotArmControl.h"
+ #include "robotArmControl.h"
 
 robotArmControl *ptr;
 uStepperS stepper;
@@ -11,29 +11,6 @@ volatile state_t nextCommand = rdy;
 float supplyVoltage = 12.0;
 uint8_t valveCompareMatch = 107;
 uint16_t pumpCompareMatch = 254;
-
-void robotArmControl::checkConnOrientation()
-{
-  /*int32_t value;
-  float connectorOrientation[4] = {-10,10,-10,10};
-  for(int i; i<4; i++)
-  {
-    stepper.encoder.setHome();
-    stepper.moveAngle(connectorOrientation[i]);
-    while(stepper.getMotorState());
-    connectorOrientation[i] = stepper.encoder.getAngleMoved();
-    DEBUG_PRINTLN(connectorOrientation[i]);
-  }
-  if((((connectorOrientation[0] + connectorOrientation[2])/2.0) < -3.0) && (((connectorOrientation[1] + connectorOrientation[3])/2.0) > 3.0))
-  {
-    value = stepper.driver.readRegister(GCONF);
-    value ^= (1 << 4);
-    stepper.driver.writeRegister(GCONF,value);
-  }*/
-	stepper.checkOrientation(15);
-  	stepper.encoder.setHome();
-}
-
 
 robotArmControl::robotArmControl() { ptr = this; }
 
@@ -59,23 +36,23 @@ void robotArmControl::begin() {
     I2CPORT.onRequest(this->busRequestEvent);
 
     if (bus.addressNum == SHOULDER) {
-      // stepper.encoder.setHome();
       DEBUG_PRINTLN("-- I Am Shoulder --");
       this->direction = 1.0;
-      this->checkConnOrientation();
+      stepper.setOrientation(1);
+      stepper.encoder.setHome();
       stepper.setHoldCurrent(40);
       this->stallSense = 2;
       this->homeSpeed = 35.0;
     }
 
     if (bus.addressNum == ELBOW) {
-      // stepper.encoder.setHome();
       DEBUG_PRINTLN("-- I Am Elbow --");
       this->direction = -1.0;
       stepper.setHoldCurrent(10);
       delay(2000);
       stepper.setHoldCurrent(40);
-      this->checkConnOrientation();
+      stepper.setOrientation(1);
+      stepper.encoder.setHome();
       this->stallSense = 2;
       this->homeSpeed = 35.0;
     }
@@ -96,7 +73,8 @@ void robotArmControl::begin() {
     TIMSK4 = (1 << 0) | (1 << 1); //enable overflow and OCA interrupts
     OCR4A = 1000;
     TCCR4B |= (1 << 1); //Enable clock at prescaler 8. 16MHz/8 = 2MHz/40000 = 50Hz Servo Pulse frequency
-    this->checkConnOrientation();
+    stepper.setOrientation(1); // match the servo's 4-pin connector orientation
+    stepper.encoder.setHome();
     stepper.setHoldCurrent(40);
 
     this->stallSense = 2;
