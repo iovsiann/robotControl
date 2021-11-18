@@ -24,6 +24,8 @@ public:
   void runContinously(uint8_t slave, float speed);
   void stopSlave(uint8_t slave);
   void setHomingSpeed(uint8_t slave, float speed);
+  void setCurrent(uint8_t slave, float current);
+  void setHoldCurrent(uint8_t slave, float current);
   void setStallSense(uint8_t slave, float sense);
 
 private:

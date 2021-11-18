@@ -41,6 +41,10 @@ public:
 
   void setMotorHomingSpeed(uint8_t num, float speed);
 
+  void setMotorCurrent(uint8_t num, float current);
+  
+  void setMotorHoldCurrent(uint8_t num, float current);
+
   void setMotorStallSense(uint8_t num, float sense);
 
   void runContinously(uint8_t num, float speed);

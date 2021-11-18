@@ -1,4 +1,3 @@
-
 #ifndef _ROBOTARMCONFIG_H_
 #define _ROBOTARMCONFIG_H_
 
@@ -7,13 +6,15 @@ typedef enum {
   home,
   resetHome,
   move,
-  runContinously,
+  runContinouslyCmd,
   setVelocity,
   setAcceleration,
   stop,
   setBrakeMode,
   setHomeSpeed,
-  setStallSense
+  setStallSense,
+  setCurrent,
+  setHoldCurrent
 } state_t;
 
 /* Define DEBUG to enable generelle debug output message in Serial */

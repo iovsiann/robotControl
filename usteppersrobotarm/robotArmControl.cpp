@@ -1,4 +1,4 @@
- #include "robotArmControl.h"
+#include "robotArmControl.h"
 
 robotArmControl *ptr;
 uStepperS stepper;
@@ -222,7 +222,7 @@ void robotArmControl::masterLoop()
             
             this->targetReached = 1;
             this->movementInProgress = 0;
-            comm.send("REACHED");
+            comm.send((char *)"REACHED");
           }
           
         }
@@ -337,6 +337,12 @@ void robotArmControl::slaveLoop()
     }
     else if (state == setHomeSpeed) {
       this->homeSpeed = currentCommandArgument.f;
+    }
+    else if (state == setCurrent) {
+      stepper.setCurrent(currentCommandArgument.f);
+    }
+    else if (state == setHoldCurrent) {
+      stepper.setHoldCurrent(currentCommandArgument.f);
     }
     else if (state == setStallSense) {
       this->stallSense = currentCommandArgument.f;
@@ -577,7 +583,7 @@ void robotArmControl::execute(char *command) {
   if (command == NULL) {
     // If command is null, there is no new packet. Return a RDY to indidate arm
     // is ready for new commands
-    comm.send(COMMAND_READY);
+    comm.send((char *)COMMAND_READY);
     return;
   }
 
@@ -586,20 +592,20 @@ void robotArmControl::execute(char *command) {
 
   // Check for each valid command
 
-  if (comm.check("G1")) {
+  if (comm.check((char *)"G1")) {
   	float servoSpeed;
 
     // Extract position, working on the string provided by .check()
-    bool px = comm.value("X", &this->tx);
-    bool py = comm.value("Y", &this->ty);
-    bool pz = comm.value("Z", &this->tz);
-    bool pv = comm.value("F", &this->feedrate);
-    bool ps = comm.value("S", &this->targetServo);
-    bool pp = comm.value("P", &this->targetPumpState);
-    bool pa = comm.value("A", &servoSpeed);
+    bool px = comm.value((char *)"X", &this->tx);
+    bool py = comm.value((char *)"Y", &this->ty);
+    bool pz = comm.value((char *)"Z", &this->tz);
+    bool pv = comm.value((char *)"F", &this->feedrate);
+    bool ps = comm.value((char *)"S", &this->targetServo);
+    bool pp = comm.value((char *)"P", &this->targetPumpState);
+    bool pa = comm.value((char *)"A", &servoSpeed);
 
     if ((px || py || pz) != true)
-      comm.send("INVALID POS");
+      comm.send((char *)"INVALID POS");
     else {
       DEBUG_PRINT("STARTING MOVE");
       if (pa) {
@@ -611,15 +617,15 @@ void robotArmControl::execute(char *command) {
     }
   }
 
-  else if (comm.check("M10")) {
+  else if (comm.check((char *)"M10")) {
 
     // Extract position, working on the string provided by .check()
-    bool sx = comm.value("X", &this->sx);
-    bool sy = comm.value("Y", &this->sy);
-    bool sz = comm.value("Z", &this->sz);
+    bool sx = comm.value((char *)"X", &this->sx);
+    bool sy = comm.value((char *)"Y", &this->sy);
+    bool sz = comm.value((char *)"Z", &this->sz);
 
     if ((sx || sy || sz) != true) {
-      comm.send("INVALID POS");
+      comm.send((char *)"INVALID POS");
     }
 
     else {
@@ -660,39 +666,39 @@ void robotArmControl::execute(char *command) {
       }
   }
 
-  else if (comm.check("M0")) {
+  else if (comm.check((char *)"M0")) {
     stepper.stop(HARD);
     this->bus.stopSlave(ELBOW);
     this->bus.stopSlave(SHOULDER);
     // STOP
   }
 
-  else if (comm.check("M1")) {
+  else if (comm.check((char *)"M1")) {
     // PAUSE
   }
 
-  else if (comm.check("M2"))
+  else if (comm.check((char *)"M2"))
     // RECORD
     this->isRecording = true;
 
-  else if (comm.check("M3"))
+  else if (comm.check((char *)"M3"))
     // STOP RECORD
     this->isRecording = false;
 
-  else if (comm.check("M4")) {
+  else if (comm.check((char *)"M4")) {
 
-    if (!comm.value("S", &this->targetServo)) {
-      comm.send("INVALID SERVO");
+    if (!comm.value((char *)"S", &this->targetServo)) {
+      comm.send((char *)"INVALID SERVO");
     } else {      
       this->setServo(this->targetServo);
 
       float servoSpeed;
-      if (comm.value("A", &servoSpeed))
+      if (comm.value((char *)"A", &servoSpeed))
         this->setServoSpeed(servoSpeed);
     }
   }
 
-  else if (comm.check("M5"))
+  else if (comm.check((char *)"M5"))
   {
     // PUMP ON
     this->setPump(true);
@@ -700,19 +706,19 @@ void robotArmControl::execute(char *command) {
   }
     
 
-  else if (comm.check("M6"))
+  else if (comm.check((char *)"M6"))
   {  
     // PUMP OFF
     this->setPump(false);
   }
 
-  else if (comm.check("M9"))
+  else if (comm.check((char *)"M9"))
   {  
     //Send current position in xyz
     this->sendXYZ();
   }
 
-  else if (comm.check("M14"))
+  else if (comm.check((char *)"M14"))
   {  
     //Set brakemode to freewheel
     this->setbrakeMode(BASE,0.0);
@@ -720,7 +726,7 @@ void robotArmControl::execute(char *command) {
     this->setbrakeMode(SHOULDER,0.0);
   }
 
-  else if (comm.check("M15"))
+  else if (comm.check((char *)"M15"))
   {  
     //Set brakemode to coolbrake
     this->setbrakeMode(BASE,1.0);
@@ -728,19 +734,19 @@ void robotArmControl::execute(char *command) {
     this->setbrakeMode(SHOULDER,1.0);
   }
 
-  else if (comm.check("M16"))
+  else if (comm.check((char *)"M16"))
   {  
     //Set brakemode to hardbrake
     this->setbrakeMode(BASE,2.0);
     this->setbrakeMode(ELBOW,2.0);
     this->setbrakeMode(SHOULDER,2.0);
   }
-  else if (comm.check("M17"))
+  else if (comm.check((char *)"M17"))
   {
     float acceleration;
-    if (!comm.value("A", &acceleration)) 
+    if (!comm.value((char *)"A", &acceleration)) 
     {
-      comm.send("INVALID acceleration");
+      comm.send((char *)"INVALID acceleration");
     } 
     else {
       this->setMotorAcceleration(BASE,FEEDRATETOANGULARFEEDRATE(acceleration));
@@ -750,12 +756,12 @@ void robotArmControl::execute(char *command) {
     
     DEBUG_PRINTLN("M17");
   }
-  else if (comm.check("M18"))
+  else if (comm.check((char *)"M18"))
   {
     float sense;
-    if (!comm.value("S", &sense)) 
+    if (!comm.value((char *)"S", &sense)) 
     {
-      comm.send("INVALID sense");
+      comm.send((char *)"INVALID sense");
     } 
     else {
       this->setMotorStallSense(BASE,sense);
@@ -763,12 +769,12 @@ void robotArmControl::execute(char *command) {
     
     DEBUG_PRINTLN("M18");
   }
-  else if (comm.check("M19"))
+  else if (comm.check((char *)"M19"))
   {
     float sense;
-    if (!comm.value("S", &sense)) 
+    if (!comm.value((char *)"S", &sense)) 
     {
-      comm.send("INVALID sense");
+      comm.send((char *)"INVALID sense");
     } 
     else {
       this->setMotorStallSense(ELBOW,sense);
@@ -776,12 +782,12 @@ void robotArmControl::execute(char *command) {
     
     DEBUG_PRINTLN("M19");
   }
-  else if (comm.check("M20"))
+  else if (comm.check((char *)"M20"))
   {
     float sense;
-    if (!comm.value("S", &sense)) 
+    if (!comm.value((char *)"S", &sense)) 
     {
-      comm.send("INVALID sense");
+      comm.send((char *)"INVALID sense");
     } 
     else {
       this->setMotorStallSense(SHOULDER,sense);
@@ -789,13 +795,13 @@ void robotArmControl::execute(char *command) {
     
     DEBUG_PRINTLN("M20");
   }
-  else if (comm.check("M21"))
+  else if (comm.check((char *)"M21"))
   {
     float speed;
     DEBUG_PRINTLN("M21");
-    if (!comm.value("S", &speed)) 
+    if (!comm.value((char *)"S", &speed)) 
     {
-      comm.send("INVALID speed");
+      comm.send((char *)"INVALID speed");
     } 
     else {
       this->setMotorHomingSpeed(BASE,speed);
@@ -803,12 +809,12 @@ void robotArmControl::execute(char *command) {
     
     DEBUG_PRINTLN("M21");
   }
-  else if (comm.check("M22"))
+  else if (comm.check((char *)"M22"))
   {
     float speed;
-    if (!comm.value("S", &speed)) 
+    if (!comm.value((char *)"S", &speed)) 
     {
-      comm.send("INVALID speed");
+      comm.send((char *)"INVALID speed");
     } 
     else {
       this->setMotorHomingSpeed(ELBOW,speed);
@@ -816,32 +822,85 @@ void robotArmControl::execute(char *command) {
     
     DEBUG_PRINTLN("M22");
   }
-  else if (comm.check("M23"))
+  else if (comm.check((char *)"M23"))
   {
     float speed;
-    if (!comm.value("S", &speed)) 
+    if (!comm.value((char *)"S", &speed)) 
     {
-      comm.send("INVALID speed");
+      comm.send((char *)"INVALID speed");
     } 
     else {
       this->setMotorHomingSpeed(SHOULDER,speed);
     }
     
-    DEBUG_PRINTLN("M23");
+    DEBUG_PRINTLN((char *)"M23");
   }
-  
+  else if (comm.check((char *)"M24")) {
+    float current, holdCurrent;
+
+    bool cc = comm.value((char *)"C", &current);
+    bool hc = comm.value((char *)"H", &holdCurrent);
+
+    if ((cc || hc) != true) {    
+      comm.send((char *)"INVALID currents");
+    } 
+    else {
+      if (cc)
+        this->setMotorCurrent(BASE, current);
+      if (hc)
+        this->setMotorHoldCurrent(BASE, current);
+    }
+    
+    // DEBUG_PRINTLN("M24");
+  }  
+  else if (comm.check((char *)"M25")) {
+    float current, holdCurrent;
+
+    bool cc = comm.value((char *)"C", &current);
+    bool hc = comm.value((char *)"H", &holdCurrent);
+
+    if ((cc || hc) != true) {    
+      comm.send((char *)"INVALID currents");
+    } 
+    else {
+      if (cc)
+        this->setMotorCurrent(ELBOW, current);
+      if (hc)
+        this->setMotorHoldCurrent(ELBOW, current);
+    }
+    
+    // DEBUG_PRINTLN("M25");
+  }  
+  else if (comm.check((char *)"M26")) {
+    float current, holdCurrent;
+
+    bool cc = comm.value((char *)"C", &current);
+    bool hc = comm.value((char *)"H", &holdCurrent);
+
+    if ((cc || hc) != true) {    
+      comm.send((char *)"INVALID currents");
+    } 
+    else {
+      if (cc)
+        this->setMotorCurrent(SHOULDER, current);
+      if (hc)
+        this->setMotorHoldCurrent(SHOULDER, current);
+    }
+    
+    // DEBUG_PRINTLN("M26");
+  }  
     
 
-  else if (comm.check("G28"))
+  else if (comm.check((char *)"G28"))
   {
     // Home
     this->homeArm();
-    comm.send("HOMINGDONE");
+    comm.send((char *)"HOMINGDONE");
   }
     
 
   else {
-    comm.send("INVALID COMMAND");
+    comm.send((char *)"INVALID COMMAND");
   }
 }
 
@@ -1012,6 +1071,24 @@ void robotArmControl::setMotorHomingSpeed(uint8_t num, float speed)
     this->homeSpeed = speed;
   } else {
     bus.setHomingSpeed(num, speed);
+  }
+}
+
+void robotArmControl::setMotorCurrent(uint8_t num, float current)
+{
+  if (num == BASE) {
+    stepper.setCurrent(current);
+  } else {
+    bus.setCurrent(num, current);
+  }
+}
+
+void robotArmControl::setMotorHoldCurrent(uint8_t num, float current)
+{
+  if (num == BASE) {
+    stepper.setHoldCurrent(current);
+  } else {
+    bus.setHoldCurrent(num, current);
   }
 }
 
@@ -1188,7 +1265,7 @@ void robotArmControl::busReceiveEvent(void) {
       value.b[1] = buf[2];
       value.b[2] = buf[3];
       value.b[3] = buf[4];
-      nextCommandArgument = value;
+      nextCommandArgument.f = value.f;
       nextCommand = setAcceleration;
       break;
     case 's': // set speed
@@ -1196,7 +1273,7 @@ void robotArmControl::busReceiveEvent(void) {
       value.b[1] = buf[2];
       value.b[2] = buf[3];
       value.b[3] = buf[4];
-      nextCommandArgument = value;
+      nextCommandArgument.f = value.f;
       nextCommand = setVelocity;
       break;
     case 'S': // runContinously
@@ -1204,8 +1281,8 @@ void robotArmControl::busReceiveEvent(void) {
       value.b[1] = buf[2];
       value.b[2] = buf[3];
       value.b[3] = buf[4];
-      nextCommandArgument = value;
-      nextCommand = 5;
+      nextCommandArgument.f = value.f;
+      nextCommand = runContinouslyCmd;
       break;
     case 'a': // Move to angle
     {
@@ -1214,7 +1291,7 @@ void robotArmControl::busReceiveEvent(void) {
       value.b[2] = buf[3];
       value.b[3] = buf[4];
 
-      nextCommandArgument = value;
+      nextCommandArgument.f = value.f;
       nextCommand = move;
     } break;
     case 'b': // setBrakeMode
@@ -1224,7 +1301,7 @@ void robotArmControl::busReceiveEvent(void) {
       value.b[2] = buf[3];
       value.b[3] = buf[4];
 
-      nextCommandArgument = value;
+      nextCommandArgument.f = value.f;
       nextCommand = setBrakeMode;
     } break;
     case 'H': // setHomeSpeed
@@ -1234,7 +1311,7 @@ void robotArmControl::busReceiveEvent(void) {
       value.b[2] = buf[3];
       value.b[3] = buf[4];
 
-      nextCommandArgument = value;
+      nextCommandArgument.f = value.f;
       nextCommand = setHomeSpeed;
     } break;
     case 'f': // setSensitivity
@@ -1244,8 +1321,28 @@ void robotArmControl::busReceiveEvent(void) {
       value.b[2] = buf[3];
       value.b[3] = buf[4];
 
-      nextCommandArgument = value;
+      nextCommandArgument.f = value.f;
       nextCommand = setStallSense;
+    } break;
+    case 'c': // setCurrent
+    {
+      value.b[0] = buf[1];
+      value.b[1] = buf[2];
+      value.b[2] = buf[3];
+      value.b[3] = buf[4];
+
+      nextCommandArgument.f = value.f;
+      nextCommand = setCurrent;
+    } break;
+    case 'C': // setHoldCurrent
+    {
+      value.b[0] = buf[1];
+      value.b[1] = buf[2];
+      value.b[2] = buf[3];
+      value.b[3] = buf[4];
+
+      nextCommandArgument.f = value.f;
+      nextCommand = setHoldCurrent;
     } break;
     case 'q': // request some information. does not affect state
       value.b[0] = buf[1];

@@ -69,6 +69,16 @@ void robotArmI2C::setHomingSpeed(uint8_t slave, float speed) {
   writeCommand(slave, 'H', speed);
 }
 
+// Master function to change stepper current
+void robotArmI2C::setCurrent(uint8_t slave, float current) {
+  writeCommand(slave, 'c', current);
+}
+
+// Master function to change stepper hold current
+void robotArmI2C::setHoldCurrent(uint8_t slave, float current) {
+  writeCommand(slave, 'C', current);
+}
+
 // Master function to change slave stall sense
 void robotArmI2C::setStallSense(uint8_t slave, float sense) {
   writeCommand(slave, 'f', sense);

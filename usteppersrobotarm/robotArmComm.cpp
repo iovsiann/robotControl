@@ -25,7 +25,7 @@ bool robotArmComm::check(char *identifier) {
 
   if (strcmp(command, identifier) == 0) {
 
-    this->send(COMMAND_VALID);
+    this->send((char *)COMMAND_VALID);
     return true;
   }
 
