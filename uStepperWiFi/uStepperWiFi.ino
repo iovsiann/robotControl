@@ -1,15 +1,22 @@
+#ifdef ESP8266
 #include <ESP8266WebServer.h>
 #include <ESP8266WiFi.h>
+#endif
+#ifdef ESP32
+#include <WebServer.h>
+#include <WiFi.h>
+#include <ESPmDNS.h>
+#endif
+
 #include <WebSocketsServer.h>
 // Include SPIFFS filesystem
 #include "FS.h"
 // Include GCode class
 #include "GCode.h"
-#include <WebOTA.h>
+#include "WebOTA.h"
 
 ESP8266WebServer server(80);
 WebSocketsServer websocket = WebSocketsServer(81);
-bool startOTA = 0;
 GCode link;
 
 const char* VERSION = "0.1.0";
@@ -67,6 +74,9 @@ void loop() {
 
   websocket.loop();
   server.handleClient();
+//#ifdef ESP8266
+//  MDNS.update();
+//#endif
 
   // Listen for messages coming from master
   if (link.run()) {
@@ -155,7 +165,7 @@ void playNextLine( void ){
     strcat(command, String(playBackValue).c_str()); //to playBackValue
 
     // For debugging
-    websocket.broadcastTXT("Playing line " + String(recordLineCount) + ": " + String(command));
+    // websocket.broadcastTXT("Playing line " + String(recordLineCount) + ": " + String(command));
     
     link.send(command, false); // False = do not add checksum
 
@@ -341,7 +351,48 @@ void initWiFi(void) {
   if (!WiFi.softAP(ssid, password)) {
     Serial.println("Failed to initialise WiFi");
   }
+  /*
+  int init_wifi(const char *ssid, const char *password, const char *mdns_hostname) {
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+
+  Serial.println("");
+  Serial.print("Connecting to Wifi");
+
+  // Wait for connection
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("");
+  Serial.printf("Connected to '%s'\r\n\r\n",ssid);
+
+  //String ipaddr = ip2string(WiFi.localIP());
+  //Serial.printf("IP address   : %s\r\n", ipaddr.c_str());
+  //Serial.printf("MAC address  : %s \r\n", WiFi.macAddress().c_str());
+
+  init_mdns(mdns_hostname);
+
+  return 1;
+  */
 }
+
+/*
+  int init_mdns(const char *host) {
+  // Use mdns for host name resolution
+  if (!MDNS.begin(host)) {
+    Serial.println("Error setting up MDNS responder!");
+
+    return 0;
+  }
+
+  Serial.printf("mDNS started : %s.local\r\n", host);
+
+  webota.mdns = host;
+
+  return 1;
+*/
 
 void initSPIFFS(void) {
   // Begin file-system
