@@ -523,7 +523,7 @@ function joystickControl(){
 		}
 		else
 		{
-			feedrateY = (xy.y/Math.abs(xy.y))*(parseFloat(minFeedrate.value) + (xy.y - joystickMinValue)*scaleFactor);
+			feedrateY = (xy.y/Math.abs(xy.y))*(parseFloat(minFeedrate.value) + (Math.abs(xy.y) - joystickMinValue)*scaleFactor);
 		}
 		if(Math.abs(xy.x) < joystickMinValue)
 		{
@@ -531,7 +531,7 @@ function joystickControl(){
 		}
 		else
 		{
-			feedrateX = (xy.x/Math.abs(xy.x))*(parseFloat(minFeedrate.value) + (xy.x - joystickMinValue)*scaleFactor);
+			feedrateX = (xy.x/Math.abs(xy.x))*(parseFloat(minFeedrate.value) + (Math.abs(xy.x) - joystickMinValue)*scaleFactor);
 		}
 	}
 	else
@@ -552,7 +552,7 @@ function joystickControl(){
 		}
 		else
 		{
-			feedrateZ = (z.y/Math.abs(z.y))*(parseFloat(minFeedrate.value) + (z.y - joystickMinValue)*scaleFactor);
+			feedrateZ = (z.y/Math.abs(z.y))*(parseFloat(minFeedrate.value) + (Math.abs(z.y) - joystickMinValue)*scaleFactor);
 		}
 	}
 	else

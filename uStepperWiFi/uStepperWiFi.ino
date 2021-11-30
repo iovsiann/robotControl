@@ -1,23 +1,28 @@
 #ifdef ESP8266
 #include <ESP8266WebServer.h>
 #include <ESP8266WiFi.h>
+#include "FS.h" // Include SPIFFS filesystem
 #endif
 #ifdef ESP32
 #include <WebServer.h>
 #include <WiFi.h>
 #include <ESPmDNS.h>
+#include <SPIFFS.h>
 #endif
 
 #include <WebSocketsServer.h>
-// Include SPIFFS filesystem
-#include "FS.h"
-// Include GCode class
-#include "GCode.h"
+#include "GCode.h" // Include GCode class
 #include "WebOTA.h"
 
+#ifdef ESP8266
 ESP8266WebServer server(80);
+#endif
+#ifdef ESP32
+WebServer server(80);
+#endif
+
 WebSocketsServer websocket = WebSocketsServer(81);
-GCode link;
+GCode gcode;
 
 const char* VERSION = "0.1.0";
 const char *ssid = "uStepper-Arm";
@@ -45,8 +50,8 @@ double x, y, z;
 void setup() {
   // Init Serial port for UART communication
   Serial.begin(115200);
-  link.setSerialPort(&Serial);
-  link.setBufferSize(1);
+  gcode.setSerialPort(&Serial);
+  gcode.setBufferSize(1);
 
   // Built-in LED is pin 5
   pinMode(statusLed, OUTPUT);
@@ -79,22 +84,22 @@ void loop() {
 //#endif
 
   // Listen for messages coming from master
-  if (link.run()) {
+  if (gcode.run()) {
 
     // Read newest response from fifo buffer
-    response = link.getNextValue();
+    response = gcode.getNextValue();
 
     // If response is a position, pull the values from the message and send to ESP
-    if (link.check("POS", response) ) {
-      link.value("X", &x);
-      link.value("Y", &y);
-      link.value("Z", &z);
+    if (gcode.check((char *)"POS", response) ) {
+      gcode.value((char *)"X", &x);
+      gcode.value((char *)"Y", &y);
+      gcode.value((char *)"Z", &z);
       
       websocket.broadcastTXT(response);
     }
 
     // For knowing when the latest sent line from the recording is reached
-    else if (link.check("REACHED", response)) {
+    else if (gcode.check((char *)"REACHED", response)) {
       websocket.broadcastTXT("LINE REACHED");  // Debugging
       positionReached = true;
       playStepsDelay = millis() + 1000;
@@ -167,7 +172,7 @@ void playNextLine( void ){
     // For debugging
     // websocket.broadcastTXT("Playing line " + String(recordLineCount) + ": " + String(command));
     
-    link.send(command, false); // False = do not add checksum
+    gcode.send(command, false); // False = do not add checksum
 
     recordLineCount++;
   }else{
@@ -311,7 +316,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t len) {
     // Emergency stop?
     else if (strstr(packet, "M0 ")) {
       playRecording = false;
-      link.send("M10 X0.0 Y0.0 Z0.0");
+      gcode.send((char *)"M10 X0.0 Y0.0 Z0.0");
     }
 
     // If a M10 command (xyz speeds) is received while playing drop the message
@@ -324,7 +329,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t len) {
     strcpy(commandBuffer, packet);
 
     // Send GCode over UART
-    link.send(commandBuffer);
+    gcode.send(commandBuffer);
   }
 }
 
@@ -396,7 +401,7 @@ void initWiFi(void) {
 
 void initSPIFFS(void) {
   // Begin file-system
-  if (!SPIFFS.begin()) {
+  if (!SPIFFS.begin(true)) {
     Serial.println("Failed to initialise SPIFFS");
   }
 }
