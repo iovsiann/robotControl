@@ -1,26 +1,35 @@
 #ifdef ESP8266
-#include <ESP8266WebServer.h>
-#include <ESP8266WiFi.h>
-#include "FS.h" // Include SPIFFS filesystem
+  #include <ESP8266WebServer.h>
+  #include <ESP8266WiFi.h>  // Install https://github.com/esp8266/arduino-esp8266fs-plugin
+  #include "FS.h" // Include SPIFFS filesystem
+  // Board      Generic ESP8285 Module
+  // Upload Speed    115200
+  // CPU Frequency 80 MHz
+  // Crystal Frequency 26 MHz
+  // Flash Size    2M (FS: 256KB OTA: ~896KB)
+  // [SPIFFS] upload  : C:\Users\[user]\AppData\Local\Temp\.../uStepperWiFi.spiffs.bin
+  #define ESPWebServer ESP8266WebServer
+  #define LED_PIN 4
+  #define INVERT_LED false
 #endif
+
 #ifdef ESP32
-#include <WebServer.h>
-#include <WiFi.h>
-#include <ESPmDNS.h>
-#include <SPIFFS.h>
+  #include <WebServer.h>
+  #include <WiFi.h>
+  #include <ESPmDNS.h>
+  #include <SPIFFS.h> // Install https://github.com/me-no-dev/arduino-esp32fs-plugin/releases/
+  #define ESPWebServer WebServer
+  #define RXD2 16
+  #define TXD2 17
+  #define LED_PIN 2
+  #define INVERT_LED true
 #endif
 
 #include <WebSocketsServer.h>
 #include "GCode.h" // Include GCode class
 #include "WebOTA.h"
 
-#ifdef ESP8266
-ESP8266WebServer server(80);
-#endif
-#ifdef ESP32
-WebServer server(80);
-#endif
-
+ESPWebServer server(80);
 WebSocketsServer websocket = WebSocketsServer(81);
 GCode gcode;
 
@@ -37,7 +46,7 @@ int32_t playStepsDelay = 0;
 bool ledState = LOW;
 float servoValue = 0.0;
 bool pumpState = false;
-uint8_t statusLed = 4;
+uint8_t statusLed = LED_PIN;
 uint32_t previousBlink = 0;
 float playBackValue = 10.0;
 
@@ -49,7 +58,11 @@ double x, y, z;
 
 void setup() {
   // Init Serial port for UART communication
-  Serial.begin(115200);
+  Serial.begin(115200
+    #ifdef ESP32
+    , SERIAL_8N1, RXD2, TXD2
+    #endif
+  );
   gcode.setSerialPort(&Serial);
   gcode.setBufferSize(1);
 
@@ -129,13 +142,13 @@ void loop() {
     if (millis() - previousBlink >= 100) {
       previousBlink = millis();
       ledState = !ledState;
-      digitalWrite(statusLed, ledState);
+      digitalWrite(statusLed, ledState ^ INVERT_LED);
     }
   } else {
     if (WiFi.softAPgetStationNum() > 0) 
-      digitalWrite(statusLed, LOW);
+      digitalWrite(statusLed, LOW ^ INVERT_LED);
     else
-      digitalWrite(statusLed, HIGH);
+      digitalWrite(statusLed, HIGH ^ INVERT_LED);
   }
 }
 
@@ -401,7 +414,12 @@ void initWiFi(void) {
 
 void initSPIFFS(void) {
   // Begin file-system
-  if (!SPIFFS.begin(true)) {
+  if (!SPIFFS.begin(
+    #ifdef ESP32
+    true
+    #endif
+    ))
+  {
     Serial.println("Failed to initialise SPIFFS");
   }
 }

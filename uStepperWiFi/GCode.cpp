@@ -161,7 +161,7 @@ bool GCode::read(void) {
     this->newPacket = false;
 
     // Check for checksum
-    if (this->value("*", &checksum)) {
+    if (this->value((char *)"*", &checksum)) {
 
       // Checksum appended, check if it correct
       if ((uint8_t)checksum == 0xff) {
